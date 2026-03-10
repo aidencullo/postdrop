@@ -63,11 +63,7 @@
   <script>
     const BASE = '/post/';
 
-    // GitHub Pages 404 redirect passes path as ?p=
-    const redirected = new URLSearchParams(location.search).get('p');
-    if (redirected) history.replaceState(null, '', redirected);
-
-    function shortId() {
+function shortId() {
       return Math.random().toString(36).slice(2, 10);
     }
 
