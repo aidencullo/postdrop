@@ -54,11 +54,44 @@
     }
 
     #copy:hover { color: #555; background: #f0f0f0; }
+
+    #list a {
+      display: block;
+      color: #333;
+      text-decoration: none;
+      padding: 12px 0;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 16px;
+      line-height: 1.4;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    #list a:hover { color: #000; }
+
+    #new-post {
+      font-size: 14px;
+      color: #bbb;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      margin-bottom: 32px;
+    }
+
+    #new-post:hover { color: #555; }
   </style>
 </head>
 <body>
-  <div id="content" contenteditable="true" data-placeholder=""></div>
-  <button id="copy" onclick="copyLink()">copy link</button>
+  <div id="home" style="display:none">
+    <button id="new-post" onclick="newPost()">+ new post</button>
+    <div id="list"></div>
+  </div>
+  <div id="editor" style="display:none">
+    <div id="content" contenteditable="true" data-placeholder=""></div>
+    <button id="copy" onclick="copyLink()">copy link</button>
+  </div>
 
   <script>
     const BASE = '/post/';
@@ -75,18 +108,64 @@ function shortId() {
       return localStorage.getItem('post:' + id);
     }
 
-    let currentId = location.pathname.replace(BASE, '').replace(/\//g, '');
+    function getPosts() {
+      const posts = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key.startsWith('post:')) {
+          const id = key.slice(5);
+          const text = localStorage.getItem(key);
+          if (text) posts.push({ id, preview: text.slice(0, 80) });
+        }
+      }
+      return posts;
+    }
 
-    function init() {
-      if (currentId) {
-        const text = load(currentId);
+    function showList() {
+      document.getElementById('home').style.display = '';
+      document.getElementById('editor').style.display = 'none';
+      const list = document.getElementById('list');
+      const posts = getPosts();
+      if (posts.length === 0) {
+        list.innerHTML = '<p style="color:#ccc;font-size:15px">no posts yet</p>';
+      } else {
+        list.innerHTML = posts.map(p =>
+          '<a href="' + BASE + p.id + '">' + p.preview.replace(/</g, '&lt;') + '</a>'
+        ).join('');
+      }
+    }
+
+    function showEditor(id) {
+      document.getElementById('home').style.display = 'none';
+      document.getElementById('editor').style.display = '';
+      if (id) {
+        const text = load(id);
         if (text !== null) {
           document.getElementById('content').innerText = text;
         } else {
           document.getElementById('content').innerText = '(post not found on this device)';
         }
+      }
+      document.getElementById('content').focus();
+    }
+
+    function newPost() {
+      const id = shortId();
+      history.pushState(null, '', BASE + id);
+      currentId = id;
+      showEditor();
+    }
+
+    let currentId = location.pathname.replace(BASE, '').replace(/\//g, '');
+
+    function init() {
+      if (currentId === 'create') {
+        currentId = '';
+        newPost();
+      } else if (currentId) {
+        showEditor(currentId);
       } else {
-        document.getElementById('content').focus();
+        showList();
       }
     }
 
